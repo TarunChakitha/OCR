@@ -3,6 +3,12 @@ import numpy as np
 from matplotlib import pyplot as plt
 img = cv2.imread("text1.png")
 
+#pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract'
+path_shadows = r'F:\tarun\images\shadows\shadows1.jpg'
+path_skew = r'F:\tarun\images\skew\deskew-9.jpg'
+
+img = cv2.imread("text1.png")
+
 #img = cv2.pyrDown(large)
 img = cv2.resize(img, None, fx = 0.5, fy = 0.5,interpolation=cv2.INTER_LINEAR)
 img1 = img.copy()
@@ -38,7 +44,7 @@ print(len(contours))
 for cnt in range(len(contours)):
     x,y,w,h = cv2.boundingRect(contours[cnt])
     if w>22 and 52>h>13:
-        cv2.rectangle(img1,(x,y),(x+w,y+h),(255,0,0),2)
+        cv2.rectangle(img1,(x,y),(x+y,y+h),(255,0,0),2)
         mask[y:y+h,x:x+w] = 255
         masking = mask & img
 #gray2 = cv2.cvtColor(masking, cv2.COLOR_BGR2GRAY)
@@ -59,7 +65,7 @@ cv2.imshow("thresh_rect",thresh_rect)
 #plt.title("final")
 #plt.show()
 cv2.imshow("mask",masking)
-cv2.imshow("masking",masking)
+#cv2.imshow("masking",masking)
 #cv2.imshow('masked_thresh_rect',masked_thresh_rect)
 cv2.imshow('rects', img1)
 
