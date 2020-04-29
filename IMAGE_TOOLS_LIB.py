@@ -8,8 +8,6 @@ def rotate(image: np.ndarray, background_color):
     old_width, old_height = image.shape[:2]
     gray_scale = cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
     angle = determine_skew(gray_scale) 
-    if (angle <= -90):
-        angle += 180
     angle_radian = math.radians(angle)
     width = abs(np.sin(angle_radian) * old_height) + abs(np.cos(angle_radian) * old_width)
     height = abs(np.sin(angle_radian) * old_width) + abs(np.cos(angle_radian) * old_height)
@@ -24,7 +22,7 @@ def rotate(image: np.ndarray, background_color):
     return cv2.warpAffine(image, rot_mat, (int(round(height)), int(round(width))), borderValue=background_color),angle
 
 
-def image_resize(image: np.ndarray, width = None, height = None, inter = cv2.INTER_AREA):
+def image_resize(image: np.ndarray, width = None, height = None, inter = cv2.INTER_CUBIC):
     # initialize the dimensions of the image to be resized and
     # grab the image size
     dim = None

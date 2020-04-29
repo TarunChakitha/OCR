@@ -1,84 +1,78 @@
-import cv2
+import cv2 
 import numpy as np 
+import IMAGE_TOOLS_LIB
+import pytesseract
+from pytesseract import Output
 
-img = cv2.imread("text1.png")
-img = cv2.resize(img, None, fx = 0.5, fy = 0.5,interpolation=cv2.INTER_LINEAR)
-img1 = img.copy()
-b = img[:,:,0]
-g = img[:,:,1]
-r = img[:,:,2]
-rgb_planes = [b,g,r]
-result_planes = []
-result_norm_planes = []
-for plane in rgb_planes:
-    dilated_img = cv2.dilate(plane, np.ones((7,7), np.uint8))
-    bg_img = cv2.medianBlur(dilated_img, 21)
-    diff_img = 255 - cv2.absdiff(plane, bg_img)
-    norm_img = cv2.normalize(diff_img,None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8UC1)
-    result_planes.append(diff_img)
-    result_norm_planes.append(norm_img)
+pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract'
+path_shadows = r'F:\tarun\images\shadows\shadows1.jpg'
+path_skew = r'F:\tarun\images\skew\deskew-16.jpg'
 
-result = cv2.merge(result_planes)
-result_norm = cv2.merge(result_norm_planes)
-gray = cv2.cvtColor(result_norm,cv2.COLOR_BGR2GRAY)
-
-kernel_rect = cv2.getStructuringElement(cv2.MORPH_RECT,(3,3))
-#kernel_ellipse = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3))
-#kernel_cross = cv2.getStructuringElement(cv2.MORPH_CROSS,(3,3))
-gradient_rect = cv2.morphologyEx(gray, cv2.MORPH_GRADIENT,kernel_rect)
-#gradient_ellipse = cv2.morphologyEx(gray, cv2.MORPH_GRADIENT,kernel_ellipse)
-#gradient_cross = cv2.morphologyEx(gray, cv2.MORPH_GRADIENT,kernel_cross)
+image = cv2.imread(path_skew)
+no_shadows = IMAGE_TOOLS_LIB.remove_shadows(image)
+deskewed,angle = IMAGE_TOOLS_LIB.rotate(image,(255,255,255))
+image = IMAGE_TOOLS_LIB.image_resize(image,1200,675)
+image1 = image.copy()
+image2 = image.copy()
+no_shadows = IMAGE_TOOLS_LIB.remove_shadows(image)
+deskewed,angle = IMAGE_TOOLS_LIB.rotate(image,(255,255,255))
+#x = cv2.cvtColor(deskewed,cv2.COLOR_BGR2GRAY)
+#kernel = cv2.getGaussianKernel(5,0)
 #print(kernel)
-gradient_rect = np.uint8(gradient_rect)
-ret_rect, thresh_rect = cv2.threshold(gradient_rect, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
-#ret_ellipse, thresh_ellipse = cv2.threshold(gradient_ellipse, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
-#ret_cross, thresh_cross = cv2.threshold(gradient_cross, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
-print(ret_rect)
-kernel_rect = cv2.getStructuringElement(cv2.MORPH_RECT,(9,1))
-#kernel_ellipse = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(9,1))
-#kernel_cross = cv2.getStructuringElement(cv2.MORPH_CROSS,(9,1))
-#print(kernel1)
-closing_rect = cv2.morphologyEx(thresh_rect,cv2.MORPH_CLOSE,kernel_rect)
-#closing_ellipse = cv2.morphologyEx(thresh_ellipse,cv2.MORPH_CLOSE,kernel_ellipse)
-#closing_cross = cv2.morphologyEx(thresh_cross,cv2.MORPH_CLOSE,kernel_cross)
-#closing = cv2.erode(closing,np.ones((3,3),np.uint8),iterations=2)
-contours, hierarchy = cv2.findContours(closing_rect, cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
-#mask = np.asarray()
-#print(mask)
-#cv2.imshow("mask",mask)
-#print(thresh.shape)
-mask = np.zeros(img.shape,np.uint8)
+#gaussian = cv2.filter2D(deskewed,-1,kernel)
+gaussian = cv2.GaussianBlur(deskewed,(5,5),0)
+#gaussian = cv2.GaussianBlur(deskewed,(3,3),0)
+#gaussian = cv2.GaussianBlur(deskewed,(7,7),0)
+
+kernel = np.array([[-1,-1,-1],[-1,9,-1],[-1,-1,-1]])
+#print(kernel)
+sharp = cv2.filter2D(gaussian,-1,kernel)
+#sharp2 = cv2.filter2D(gaussian2,-1,kernel)
+
+#gaussian = cv2.GaussianBlur(sharp,(5,5),0)
+#sharp = cv2.filter2D(gaussian,-1,kernel)
+
+gray = cv2.cvtColor(sharp,cv2.COLOR_BGR2GRAY)
+#clahe = cv2.createCLAHE(clipLimit=2.0,tileGridSize=(8,8))
+#equalised = clahe.apply(gray)
+deskewed1 = deskewed.copy()
+deskewed2 = deskewed.copy()
+#clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+#cl1 = clahe.apply(deskewed)
+#print(type(hist_eq))
+print(angle)
+#no_shadows = IMAGE_TOOLS_LIB.remove_shadows(deskewed)
+#gaussian = cv2.GaussianBlur(deskewed,(5,5),0)
+#smooth = cv2.addWeighted(gaussian,1.5,deskewed,-0.5,0)
+#bilateral = cv2.bilateralFilter(deskewed,9,75,75)
+binary_gaussian = cv2.adaptiveThreshold(gray,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,55,25)
+binary_mean = cv2.adaptiveThreshold(gray,255,cv2.ADAPTIVE_THRESH_MEAN_C,cv2.THRESH_BINARY,55,25)
+ret, otsu = cv2.threshold(gray,180,255,cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+print(ret)
 
 
-print(len(contours))
-for cnt in range(len(contours)):
-    x,y,w,h = cv2.boundingRect(contours[cnt])
-    if w>22 and 52>h>13:
-        cv2.rectangle(img1,(x,y),(x+w,y+h),(255,0,0),2)
-        mask[y:y+h,x:x+w] = 255
-        masking = mask & img
-
-#cv2.imshow("gray",gray)
-#cv2.imshow("gradient_cross",gradient_cross)
-#cv2.imshow("gradient_ellipse",gradient_ellipse)
-cv2.imshow("gradient_rect",gradient_rect)
-cv2.imshow("thresh_rect",thresh_rect)
-#cv2.imshow("thresh_ellipse",thresh_ellipse)
-#cv2.imshow("thresh_cross",thresh_cross)
-#cv2.imshow("img1",img1)
-#cv2.imshow("closing_rect",closing_rect)
-#cv2.imshow("closing_ellipse",closing_ellipse)
-#cv2.imshow("closing_cross",closing_cross)
-#plt.imshow(closing)
-#plt.title("final")
-#plt.show()
-#cv2.imshow("mask",mask)
-cv2.imshow("masking",masking)
-cv2.imshow('rects', img1)
-
-cv2.imshow('img',img)
-cv2.imshow('shadows_out.png', result)
-cv2.imshow('shadows_out_norm.png', result_norm)
-
+cv2.imshow("gaussia",gaussian)
+#cv2.imshow("binary",binary)
+cv2.imshow("otsu",otsu)
+#cv2.imshow("binary_mean",binary_mean)
+cv2.imshow("contrast",contrast)
+cv2.imshow("result",result)
+cv2.imshow("binary_gaussian",binary_gaussian)
+cv2.imshow("gray",gray)
+cv2.imshow("dilation",dilation)
+cv2.imshow("erode",erosion)
+cv2.imshow("opening",opening)
+cv2.imshow("edges",edges)
+cv2.imshow("lap",lap)
+cv2.imshow("sharp",sharp)
+#cv2.imshow("sharp2",sharp2)
+#cv2.imshow("gaussian",gaussian)
+#cv2.imshow("smooth",smooth)
+#cv2.imshow("deskewd2",deskewed2)
+#cv2.imshow("deskewed1",deskewed1)
+cv2.imshow("hist_eq",equalised)
+#cv2.imshow("image1",image1)
+#cv2.imshow("image2",image2)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
+
