@@ -62,10 +62,9 @@ def remove_shadows(image: np.ndarray):
     normalised_image = cv2.merge(result_norm_planes)
     return normalised_image
 
-def rotate(image: np.ndarray, background_color): # OFFIAL DOCUMENTATION
+def rotate(image: np.ndarray,angle, background_color): # OFFIAL DOCUMENTATION
     old_width, old_height = image.shape[:2]
     gray_scale = cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
-    angle = determine_skew(gray_scale) 
     angle_radian = math.radians(angle)
     width = abs(np.sin(angle_radian) * old_height) + abs(np.cos(angle_radian) * old_width)
     height = abs(np.sin(angle_radian) * old_width) + abs(np.cos(angle_radian) * old_height)

@@ -1,9 +1,18 @@
-import cv2
 import numpy as np 
+import cv2 
+import math
+import pyttsx3
+import pytesseract
+import IMAGE_TOOLS_LIB
+from deskew import determine_skew, determine_skew_dev
+from typing import Tuple, Union
+from pytesseract import Output
 
-img = cv2.imread("stop.jpg")
-#img = cv2.resize(img,None,fx = 3,fy = 3,interpolation = cv2.INTER_LINEAR)
+pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract'
+path_shadows = r'F:\tarun\images\shadows\shadows1.jpg'
+path_skew = r'F:\tarun\images\skew\deskew-16.jpg'
 
+img = cv2.imread("text1.png")
 #copy of original image
 img1 = img.copy()
 img2 = img.copy()

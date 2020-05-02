@@ -41,8 +41,12 @@ binary_images = [binary_gaussian1,binary_mean1,otsu1]
 #dilate = cv2.dilate(binary_gaussian,np.ones((3,3),np.uint8))
 erode_gaussian = cv2.erode(binary_gaussian,np.ones((7,7),np.uint8))
 erode_mean = cv2.erode(binary_mean,np.ones((7,7),np.uint8))
-erode_otsu = cv2.erode(otsu,np.ones((7,7),np.uint8))
-#closing = cv2.morphologyEx(binary_gaussian,cv2.MORPH_CLOSE,np.ones((3,3),np.uint8))
+erode_otsu = cv2.erode(otsu,np.ones((7,7),np.uint8),iterations=1)
+negated_erode = ~erode_otsu
+opening = cv2.morphologyEx(negated_erode,cv2.MORPH_OPEN,np.ones((5,5),np.uint8),iterations=2)
+double_opening = cv2.morphologyEx(opening,cv2.MORPH_OPEN,np.ones((3,3),np.uint8),iterations=5)
+double_opening_dilated_7x7 = cv2.dilate(double_opening,np.ones((7,7),np.uint8),iterations=2)
+double_opening_dilated_7x7_3x3 = cv2.dilate(double_opening_dilated_7x7,np.ones((3,3),np.uint8),iterations=5)
 
 contours_gaussian,hierarchy = cv2.findContours(~erode_gaussian,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
 contours_mean,hierarchy = cv2.findContours(~erode_mean,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
