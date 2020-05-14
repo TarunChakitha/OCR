@@ -21,63 +21,7 @@ import zlib
 
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract'
 path_shadows = r'F:\tarun\images\shadows\shadows1.jpg'
-path_skew = r'F:\tarun\images\skew\deskew-16.jpg'
-
-'''
-def writePNGwithdpi(im, filename, dpi=(72,72)):
-   """Save the image as PNG with embedded dpi"""
-
-   # Encode as PNG into memory
-   retval, buffer = cv2.imencode(".png", im)
-   s = buffer.tostring()
-
-   # Find start of IDAT chunk
-   IDAToffset = s.find(b'IDAT') - 4
-
-   # Create our lovely new pHYs chunk - https://www.w3.org/TR/2003/REC-PNG-20031110/#11pHYs
-   pHYs = b'pHYs' + struct.pack('!IIc',int(dpi[0]/0.0254),int(dpi[1]/0.0254),b"\x01" ) 
-   pHYs = struct.pack('!I',9) + pHYs + struct.pack('!I',zlib.crc32(pHYs))
-
-   # Open output filename and write...
-   # ... stuff preceding IDAT as created by OpenCV
-   # ... new pHYs as created by us above
-   # ... IDAT onwards as created by OpenCV
-   with open(filename, "wb") as out:
-      out.write(buffer[0:IDAToffset])
-      out.write(pHYs)
-      out.write(buffer[IDAToffset:])
-
-################################################################################
-# main
-################################################################################
-
-# Load sample image
-
-# Save at specific dpi
-'''
-'''
-with Image(filename=path_skew, resolution=200) as image:
-    image.compression_quality = 99
-    image.save(filename='file.jpg')
-
-
-
-def setdpi(image):
-    RGBimage = cv2.cvtColor(image,cv2.COLOR_BGR2RGB)
-    PILimage = Image.fromarray(RGBimage)
-    PILimage.save("result.png",dpi = (300,300))
-    image = cv2.imread("result.png")
-    return image
-'''
-def getImageWithDpi(image):
-    image = Image.open(image)
-    #print(image.info)  # {'dpi': (96, 96), 'gamma': 0.45455}
-    out = 'out.png'
-    image.save(out, dpi= (300,300))
-    im = Image.open("out.png")
-    return im
-
-
+path_skew = r'F:\tarun\images\skew\deskew-1.png'
 
 image = cv2.imread(path_skew)
 #RGBimage = cv2.cvtColor(image,cv2.COLOR_BGR2RGB)
@@ -175,16 +119,9 @@ def rotate(image: np.ndarray,angle, background_color): # OFFIAL DOCUMENTATION
     return cv2.warpAffine(image, rot_mat, (int(round(height)), int(round(width))), borderValue=background_color)
 
 
-rotated_deskew = rotate(image_resized,skew,(255,255,255))
-rotated_median_simple = rotate(image_resized,simpleAngle(median_angles),(255,255,255))
-rotated_median_complex = rotate(image_resized,complexAngle(median_angles),(255,255,255))
-
-#rotated_median_complex = getImageWithDpi(rotated_median_complex)
-
-#writePNGwithdpi(rotated_median_complex, "result.png", (300,300))
-#rotated_median_complex = cv2.imread("result.png")
-#rotated_median_complex1 = setdpi(rotated_median_complex)
-#rotated_deskew = setdpi(rotated_deskew)
+rotated_deskew = rotate(image_resized,skew,(0,0,0))
+rotated_median_simple = rotate(image_resized,simpleAngle(median_angles),(0,0,0))
+rotated_median_complex = rotate(image_resized,complexAngle(median_angles),(0,0,0))
 
 contours , hierarchy = cv2.findContours(double_opening_dilated_7x7_3x3,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
 contours = sorted(contours,key=cv2.contourArea)
@@ -201,15 +138,20 @@ print("max contour angle", max_contour_angle)
 print("corrected max contour angle complex", complexAngle(max_contour_angle))
 print("corrected max contour angle simple", simpleAngle(max_contour_angle))
 
-max_contour_rotated_complex = rotate(image_resized1,complexAngle(max_contour_angle),(255,255,255))
-max_contour_rotated_simple = rotate(image_resized1,simpleAngle(max_contour_angle),(255,255,255))
+max_contour_rotated_complex = rotate(image_resized1,complexAngle(max_contour_angle),(0,0,0))
+max_contour_rotated_simple = rotate(image_resized1,simpleAngle(max_contour_angle),(0,0,0))
 
+rotated_median_complex_gray = cv2.cvtColor(rotated_median_complex,cv2.COLOR_BGR2GRAY)
+rotated_median_complex_gaussian = cv2.adaptiveThreshold(rotated_median_complex_gray,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,55,25)
+#rotated_median_complex_mean = cv2.adaptiveThreshold(gray,255,cv2.ADAPTIVE_THRESH_MEAN_C,cv2.THRESH_BINARY,55,25)
+#ret, rotated_median_complex_otsu = cv2.threshold(rotated_median_complex_gray,180,255,cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+cv2.imwrite("ada gau.jpg",rotated_median_complex_gaussian)
 
-#rotated_median_complex = getImageWithDpi(rotated_median_complex)
-#rotated_median_complex = np.array(rotated_median_complex)
+#rotated_median_complex = setdpi(rotated_median_complex)
+#rotated_median_complex = np.array(rotated_median_complex,dtype=np.uint8)
 #osd_original = pytesseract.image_to_osd(image_resized)
 #osd_rotated_deskew = pytesseract.image_to_osd(rotated_deskew)
-osd_rotated_median_complex = pytesseract.image_to_osd(rotated_median_complex)
+osd_rotated_median_complex = pytesseract.image_to_osd(rotated_median_complex_gaussian)
 #angle_original = re.search('(?<=Rotate: )\d+', osd_original).group(0)
 #angle_rotated_deskew = re.search('(?<=Rotate: )\d+', osd_rotated_deskew).group(0)
 angle_rotated_median_complex = re.search('(?<=Rotate: )\d+', osd_rotated_median_complex).group(0)
@@ -239,11 +181,12 @@ elif (angle_rotated_median_complex == '270'):
     cv2.imwrite("second rotation.jpg",second_rotation)
 
 titles = ['original','rotated_deskew', 'rotated median complex',
-            'max contour complex','max contour simple','rotated median simple']
-images = [image, rotated_deskew, rotated_median_complex, max_contour_rotated_complex, max_contour_rotated_simple,rotated_median_simple]
+            'max contour complex','max contour simple','rotated median simple','rot med gau','rot med gray']
+images = [image, rotated_deskew, rotated_median_complex, max_contour_rotated_complex,
+            max_contour_rotated_simple,rotated_median_simple,rotated_median_complex_gaussian,rotated_median_complex_gray]
 
-for i in range(5):
-    plt.subplot(3,2,i+1),plt.imshow(images[i])
+for i in range(8):
+    plt.subplot(4,2,i+1),plt.imshow(images[i])
     plt.title(titles[i])
     #plt.xticks([]),plt.yticks([])
     plt.axis("off")
