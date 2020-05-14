@@ -1,6 +1,6 @@
 import numpy as np 
 import cv2 
-from deskew import determine_skew, determine_skew_dev
+from deskew import determine_skew
 from typing import Tuple, Union
 import math
 import pyttsx3
@@ -9,7 +9,7 @@ from pytesseract import Output
 
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract'
 path_shadows = r'F:\tarun\images\shadows\shadows1.jpg'
-path_skew = r'F:\tarun\images\skew\deskew-9.jpg'
+path_skew = r'F:\tarun\images\skew\deskew-16.jpg'
 
 
 def image_resize(image: np.ndarray, width = None, height = None, inter = cv2.INTER_CUBIC):
@@ -62,9 +62,10 @@ def remove_shadows(image: np.ndarray):
     normalised_image = cv2.merge(result_norm_planes)
     return normalised_image
 
-def rotate(image: np.ndarray,angle, background_color): # OFFIAL DOCUMENTATION
+def rotate(image: np.ndarray, background_color): # OFFIAL DOCUMENTATION
     old_width, old_height = image.shape[:2]
     gray_scale = cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
+    angle = determine_skew(gray_scale)
     angle_radian = math.radians(angle)
     width = abs(np.sin(angle_radian) * old_height) + abs(np.cos(angle_radian) * old_width)
     height = abs(np.sin(angle_radian) * old_width) + abs(np.cos(angle_radian) * old_height)
@@ -80,10 +81,10 @@ def rotate(image: np.ndarray,angle, background_color): # OFFIAL DOCUMENTATION
 
 
 image = cv2.imread(path_skew)
-image_resized = image_resize(image,1200,675)
-no_shadows = remove_shadows(image_resized)
-deskewed ,angle = rotate(image_resized,(255,255,255))
-gaussian_blur = cv2.GaussianBlur(no_shadows,(5,5),0)
+deskewed ,angle = rotate(image,(255,255,255))
+no_shadows = remove_shadows(deskewed)
+image_resized = image_resize(no_shadows,1200,675)
+gaussian_blur = cv2.GaussianBlur(image_resized,(5,5),0)
 #gaussian_blur = cv2.GaussianBlur(deskewed,(7,7),0)
 
 kernel = np.array([[-1,-1,-1],[-1,9,-1],[-1,-1,-1]])
@@ -105,7 +106,7 @@ ret, otsu = cv2.threshold(gray,180,255,cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 #print(ret)
 
 #dilate = cv2.dilate(binary_gaussian,np.ones((3,3),np.uint8))
-erode = cv2.erode(binary_gaussian,np.ones((5,5),np.uint8))
+#erode = cv2.erode(binary_gaussian,np.ones((5,5),np.uint8))
 #closing = cv2.morphologyEx(binary_gaussian,cv2.MORPH_CLOSE,np.ones((3,3),np.uint8))
 
 custom_oem_psm_config1 = r'--oem 3 --psm 12'
@@ -129,16 +130,6 @@ for i in range(boxes):
         #engine.say(d2['text'][i])
         #engine.runAndWait()
         #cv2.waitKey(10)
-'''
-h, w = gray.shape
-boxes = pytesseract.image_to_boxes(gray) 
-for b in boxes.splitlines():
-    b = b.split(' ')
-    cv2.rectangle(sharp_copy, (int(b[1]), h - int(b[2])), (int(b[3]), h - int(b[4])), (0, 255, 0), 2)
-
-
-'''
-
 
 cv2.imshow("resized",image_resized)
 cv2.imshow("deskewed",deskewed)
