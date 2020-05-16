@@ -3,11 +3,23 @@ import numpy as np
 import math
 from shapely.geometry import Point
 from shapely.geometry.polygon import Polygon
+import pytesseract
+import DESKEW_MAR
+import IMAGE_TOOLS_LIB
+
+pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract'
+path_shadows = r'F:\tarun\images\shadows\shadows1.jpg'
+path_skew = r'F:\tarun\images\skew\deskew-19.jpg'
+
+image = cv2.imread("3.jpeg")
+deskewed = DESKEW_MAR.correct_skew(image)
+
+
 for f in range(0,30):
     name = ""
     print(name)
-    image = cv2.imread("bw.jpg")
-    image = cv2.resize(image, (800,600), interpolation = cv2.INTER_AREA)
+    #image = cv2.imread(path_skew)
+    image = IMAGE_TOOLS_LIB.image_resize(deskewed,1600,1200)
     # cv2.imshow("original",image)
     ima = image.copy()
     ima2 = image.copy()
@@ -105,7 +117,7 @@ for f in range(0,30):
     # cv2.imshow("afterthresh_otsu_dil",thresh_dil)
     # cv2.waitKey(0)
     res =cv2.bitwise_and(thresh_blur,thresh_dil)
-    cv2.imshow("Res",res)
-    cv2.imwrite("res1.jpeg",res)
+    cv2.imshow("Res",~res)
+    cv2.imwrite("res1.jpeg",~res)
     if cv2.waitKey(0) == 27:
         break
