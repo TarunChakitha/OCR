@@ -210,6 +210,13 @@ dmypy.json
 *.3dm
 *.max
 
+# MatLab files
+*.m
+
+#ZIP Files
+*.tar
+*.zip
+
 # End of https://www.gitignore.io/api/images
 
 

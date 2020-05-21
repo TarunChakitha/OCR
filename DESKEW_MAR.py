@@ -118,4 +118,11 @@ def correct_skew(image):
         #cv2.imshow("second_rotation",second_rotation)
         #cv2.imwrite("second rotation.jpg",second_rotation)
     
+    cv2.imwrite("negated_erode D.jpg",negated_erode)
+    #cv2.imwrite("opening2 D.jpg",opening2)
+    cv2.imwrite("opening D.jpg",opening)
+    cv2.imwrite("double opening D.jpg",double_opening)
+    cv2.imwrite("double opening dialted 3x3 D.jpg",double_opening_dilated_3x3)
+    #cv2.imwrite("sharp copy1.jpg",sharp_copy1)
+
     return second_rotation
