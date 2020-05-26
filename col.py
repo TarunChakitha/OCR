@@ -6,20 +6,35 @@ from shapely.geometry.polygon import Polygon
 import pytesseract
 import DESKEW_MAR
 import IMAGE_TOOLS_LIB
+from deskew import determine_skew
+
+import cv2
+import numpy as np
+import math
+import pyttsx3
+import pytesseract
+
+import re
+
+from deskew import determine_skew
+from typing import Tuple, Union
+from pytesseract import Output
+from matplotlib import pyplot as plt
 
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract'
 path_shadows = r'F:\tarun\images\shadows\shadows1.jpg'
-path_skew = r'F:\tarun\images\skew\deskew-19.jpg'
+path_skew = r'F:\tarun\images\skew\deskew-16.jpg'
 
-image = cv2.imread("3.jpeg")
-deskewed = DESKEW_MAR.correct_skew(image)
+image = cv2.imread("div mer.jpg")
+gray = cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
+deskewed = determine_skew(gray)
+rotated = IMAGE_TOOLS_LIB.rotate(image,(255,255,255))
 
-
-for f in range(0,30):
+for f in range(1):
     name = ""
     print(name)
     #image = cv2.imread(path_skew)
-    image = IMAGE_TOOLS_LIB.image_resize(deskewed,1600,1200)
+    image = IMAGE_TOOLS_LIB.image_resize(rotated,1600,1200)
     # cv2.imshow("original",image)
     ima = image.copy()
     ima2 = image.copy()
@@ -119,5 +134,22 @@ for f in range(0,30):
     res =cv2.bitwise_and(thresh_blur,thresh_dil)
     cv2.imshow("Res",~res)
     cv2.imwrite("res1.jpeg",~res)
-    if cv2.waitKey(0) == 27:
-        break
+    #if cv2.waitKey(0) == 27:
+    #    break
+result_copy = ~res.copy()
+custom_oem_psm_config = r'--oem 3 --psm 12'
+ocr = pytesseract.image_to_data(~res, output_type=Output.DICT,config=custom_oem_psm_config,lang='eng')
+print(len(ocr['text']))
+
+boxes = len(ocr['text'])
+#engine = pyttsx3.init()
+for i in range(boxes):
+    if int(ocr['conf'][i])>60:
+        #print(d2['text'][i])
+        (x,y,w,h) = (ocr['left'][i],ocr['top'][i],ocr['width'][i],ocr['height'][i])
+        cv2.rectangle(result_copy,(x,y),(x+w,y+h),(0,0,255),1)
+        #cv2.imshow("text",erode)
+        #engine.say(d2['text'][i])
+        #engine.runAndWait()
+        #cv2.waitKey(10)
+cv2.imwrite("result col.jpg",result_copy)

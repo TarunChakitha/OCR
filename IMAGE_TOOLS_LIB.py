@@ -19,7 +19,7 @@ def rotate(image: np.ndarray, background_color):
     rot_mat[1, 2] += (width - old_width) / 2
     rot_mat[0, 2] += (height - old_height) / 2
     #print(rot_mat[1, 2],rot_mat[0, 2])
-    return cv2.warpAffine(image, rot_mat, (int(round(height)), int(round(width))), borderValue=background_color),angle
+    return cv2.warpAffine(image, rot_mat, (int(round(height)), int(round(width))), borderValue=background_color)
 
 
 def image_resize(image: np.ndarray, width = None, height = None, inter = cv2.INTER_CUBIC):
