@@ -282,6 +282,8 @@ print(len(ocr['text']))
 '''
     collecting text with confidence value > 64
                                                '''
+def get_distance(x,y):
+    return math.sqrt(math.pow(x,2) + math.pow(y,2))
 
 xs = []
 ys = []
@@ -291,100 +293,146 @@ texts = []
 centers = []
 confidences = []
 bounding_boxes = []
+distances = []
 for i in range(len(ocr['text'])):
-    if int(ocr['conf'][i])>64:
+    if (int(ocr['conf'][i])>64):
         (x,y,w,h) = (ocr['left'][i],ocr['top'][i],ocr['width'][i],ocr['height'][i])
         xs.append(x)
         ys.append(y)
-        ws.append(y)
+        ws.append(w)
         hs.append(h)
-        confidences.append(ocr['conf'][i])
+        #distances.append(get_distance(x,y))
+        #confidences.append(ocr['conf'][i])
         #centers.append(w/2,h/2)
         texts.append(ocr['text'][i])
-        bounding_box = x,y,w,h
-        bounding_boxes.append(bounding_box)
+        #bounding_box = x,y,w,h
+        #bounding_boxes.append(bounding_box)
 
+# sorting the y coordinates in ascending order                                
 ys,xs,ws,hs,texts = zip(*sorted(zip(ys,xs,ws,hs,texts)))
 
-temp_xs = []
-temp_ys = []
-temp_ws = []
-temp_hs = []
-temp_texts = []
+xs = list(xs)
+ys = list(ys)
+ws = list(ws)
+hs = list(hs)
+texts = list(texts)
+'''
+# creating empty lists to store final(correctly sorted) bounding boxes
+final_xs = []
+final_ys = []
+final_ws = []
+final_hs = []
+final_texts = []
 
-for i,j in range(len(ys)):
-    if ((y_ini + h_ini) > y[i] > y_ini):
-        temp_ys.append(ys[i])
-        temp_xs.append(xs[i])
-        temp_ws.append(ws[i])
-        temp_hs.append(hs[i])    
-        temp_texts.append(texts[i])
-        ys.pop(i)
-        xs.pop(i)
-        ws.pop(i)
-        hs.pop(i)
-        texts.pop(i)
-    elif ((y_ini + h_ini) > (y[i] + h[i]) > y_ini):
-        temp_ys.append(ys[i])
-        temp_xs.append(xs[i])
-        temp_ws.append(ws[i])
-        temp_hs.append(hs[i])    
-        temp_texts.append(texts[i])
-        ys.pop(i)
-        xs.pop(i)
-        ws.pop(i)
-        hs.pop(i)
-        texts.pop(i)
-
-    temp_xs,temp_ys,temp_ws,temp_hs,temp_texts = zip(*sorted(zip(temp_xs,temp_ys,temp_ws,temp_hs,temp_texts)))
+count=0
+def func(ys):
+    print(len(ys))
+    if (len(ys) == 0):
+        global count
+        print("Hello" , count)
+        return 0
     
+    count = count + 1
+    #global temp_xs
+    #global temp_ys
+    #global temp_ws
+    #global temp_hs
+    #global temp_texts
+
+    global final_xs    
+    global final_ys
+    global final_ws
+    global final_hs
+    global final_texts
+
+    global xs
+    #global ys
+    global ws
+    global hs
+    global texts
+
+
+    # initialising the top bounding box of top line to get all first line bounding boxes
+    xs_ini = xs[0]
+    ys_ini = ys[0]
+    ws_ini = ws[0]
+    hs_ini = hs[0]
+    #print(xs_ini,ys_ini,ws_ini,hs_ini)
+
+    # creating empty temporary lists to store all bounding boxes of 1st line
     temp_xs = []
     temp_ys = []
     temp_ws = []
     temp_hs = []
     temp_texts = []
+    indices = []
+    # getting the 1st line bounding boxes using the given condition
+    for i in range(len(ys)):
+        if (((ys_ini + hs_ini) > ys[i]) and (ys[i] > ys_ini)):
+            print("appended 1",i)
+            temp_ys.append(ys[i])
+            temp_xs.append(xs[i])
+            temp_ws.append(ws[i])
+            temp_hs.append(hs[i])    
+            temp_texts.append(texts[i])
+            indices.append(i)
+            #ys.remove(ys[i])
+            #hs.remove(hs[i])
+        elif (((ys_ini + hs_ini) > (ys[i] + hs[i])) and ((ys[i] + hs[i])  > ys_ini)):
+            print("appended 1",i)
+            temp_ys.append(ys[i])
+            temp_xs.append(xs[i])
+            temp_ws.append(ws[i])
+            temp_hs.append(hs[i])    
+            temp_texts.append(texts[i])
+            indices.append(i)
+            #ys.remove(ys[i])
+            #hs.remove(hs[i])
+
+    # sorting the 1st line bounding boxes according to x coordinate (left-to-right)
+    if (len(temp_xs) != 0 or len(temp_ys) != 0 or len(temp_ws) != 0 or len(temp_hs) != 0 or len(temp_texts) != 0):
+        temp_xs,temp_ys,temp_ws,temp_hs,temp_texts = zip(*sorted(zip(temp_xs,temp_ys,temp_ws,temp_hs,temp_texts)))
+        final_xs = final_xs + list(temp_xs)
+        final_ys = final_ys + list(temp_ys)
+        final_ws = final_ws + list(temp_ws)
+        final_hs = final_hs + list(temp_hs)
+        final_texts = final_texts + list(temp_texts)
+    print("Indices: ", len(indices))
+    if(len(indices) != 0):
+        for k in indices:
+            xs.pop(k)
+            # print("k = " , k)
+            ys.pop(k)
+            ws.pop(k)
+            hs.pop(k)
+            texts.pop(k)
+
+    # if (len(ys) == 0):
+    #     # global count
+    #     print(count)
+    #     return 0
+    # else:
+    func(ys)
 
 
+func(ys)
+#print(xs_ini,ys_ini,ws_ini,hs_ini)
 
+#print(len(temp_xs),len(temp_ys),len(temp_ws),len(temp_hs),len(temp_texts))
 
-
-'''
-    word segmentation
-                     '''
-#center_ini = centers[0]
-#x_ini = x[0]
-#y_ini = y[0]
-#w_ini = w[0]
-#h_ini = h[0]
-
-#reverse = False
-#i = 0
-#(texts,bounding_boxes) = zip(*sorted(zip(texts,bounding_boxes),key = lambda b:b[1][i],reverse = reverse ))
-
-#i = 1
-#(texts,bounding_boxes) = zip(*sorted(zip(texts,bounding_boxes),key = lambda b:b[1][i],reverse = reverse ))
-'''
-def get_contour_precedence(boundingRect, cols):
-    tolerance_factor = 5
-    origin_x = boundingRect[0]
-    origin_y = boundingRect[1]
-    return ((origin_y // tolerance_factor) * tolerance_factor) * cols + origin_x
-
-bounding_boxes.sort(key=lambda x:get_contour_precedence(x, image_resized.shape[1]))
-'''
 #spell = SpellChecker()
-#text = []
-
+'''
 boxes = len(texts)
 engine = pyttsx3.init()
 for i in range(boxes):
     #ocr['text'][i] = spell.correction(ocr['text'][i])
-    x,y,w,h = bounding_boxes[i][0],bounding_boxes[i][1],bounding_boxes[i][2],bounding_boxes[i][3]
+    x,y,w,h = xs[i],ys[i],ws[i],hs[i]
+    #x,y,w,h = final_xs[i],final_ys[i],final_ws[i],final_hs[i]
     cv2.rectangle(image_resized_copy,(x,y),(x+w,y+h),(0,0,255),1)
     cv2.imshow("text",image_resized_copy)
-    #engine.say(d2['text'][i])
+    engine.say(texts[i])
     engine.runAndWait()
-    cv2.waitKey(500)
+    #cv2.waitKey(500)
 
 string = list_to_string(texts)
 print(string)

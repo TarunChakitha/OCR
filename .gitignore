@@ -217,6 +217,9 @@ dmypy.json
 *.tar
 *.zip
 
+#hocr files
+*.hocr
+
 # End of https://www.gitignore.io/api/images
 
 
