@@ -187,18 +187,15 @@ def de_shadow(image):
     bB = cv2.medianBlur(dilated_image_bB, 21)
     gB = cv2.medianBlur(dilated_image_gB, 21)
     rB = cv2.medianBlur(dilated_image_rB, 21)
-    image = np.dstack((image, np.ones((image.shape[0], image.shape[1], 1))*255))
+    image = np.dstack((image, np.ones((image.shape[0],\
+         image.shape[1], 1))*255))
     image = image.astype(float)
     dilate = [bB,gB,rB]
     dilate = cv2.merge(dilate)
-    dilate = np.dstack((dilate, np.ones((image.shape[0], image.shape[1], 1))*255))
+    dilate = np.dstack((dilate, np.ones((image.shape[0],\
+         image.shape[1], 1))*255))
     dilate = dilate.astype(float)
     
-    # divide each channel (image1/image2)
-    #rTmp = ImageMath.eval("convert(int(a/((float(b)+1)/256)),'L')", a=rA, b=rB)
-    #gTmp = ImageMath.eval("convert(int(a/((float(b)+1)/256)),'L')", a=gA, b=gB)
-    #bTmp = ImageMath.eval("convert(int(a/((float(b)+1)/256)),'L')", a=bA, b=bB)
-
     blend = divide(image,dilate,1.0)
     blendb = blend[:,:,0]
     blendg = blend[:,:,1]
@@ -208,10 +205,7 @@ def de_shadow(image):
     blend = blend*0.85
     blend = np.uint8(blend)
     
-    #blend = Image.fromarray(blend)
-
     return blend
-    #imgOut = Image.merge("RGB", (rTmp, gTmp, bTmp))
 
 def list_to_string(list):
     str1 = " "

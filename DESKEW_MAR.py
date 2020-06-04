@@ -71,8 +71,10 @@ def correct_skew(image):
     gray = cv2.cvtColor(sharp,cv2.COLOR_BGR2GRAY)
     def get_otsu(image):
         ret, otsu = cv2.threshold(gray,180,255,cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        cv2.imwrite("o.jpg",otsu)
         contours_bin,_ = cv2.findContours(otsu,cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)
         negated_otsu = ~otsu
+        cv2.imwrite("o n.jpg",negated_otsu)
         contours_bin_inv,_ = cv2.findContours(negated_otsu,cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)
         if (len(contours_bin) > len(contours_bin_inv)):
             print("white backgund image")
@@ -125,4 +127,6 @@ def correct_skew(image):
     
     
     return rotated_median_complex
-
+img = cv2.imread(r'F:\tarun\images\skew\deskew-25.jpg')
+deskewed = correct_skew(img)
+cv2.imwrite("des.jpg",deskewed)

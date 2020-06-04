@@ -6,13 +6,11 @@ import math
 import pyttsx3
 import pytesseract
 import re
-from deskew import determine_skew
 from typing import Tuple, Union
 from pytesseract import Output
-from matplotlib import pyplot as plt
-from PIL import Image, ImageMath
 from blend_modes import divide
 from spellchecker import SpellChecker
+#from PIL import Image, ImageMath
 #from deepcorrect import DeepCorrect
 #from punctuator import Punctuator
 
@@ -70,36 +68,49 @@ def remove_shadows(image: np.ndarray):
         # blurring the image to get the backround image
         bg_image = cv2.medianBlur(dilated_image, 21)
 
+        # subtracting the plane-background from the image-plane
         diff_image = 255 - cv2.absdiff(plane, bg_image)
+
+        # normalisng the plane
         norm_image = cv2.normalize(diff_image,None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8UC1)
+
+        # appending the plane to the final planes list
         result_norm_planes.append(norm_image)
+
+    # merging the shadow-free planes into one image
     normalised_image = cv2.merge(result_norm_planes)
 
+    # returning the normalised image
     return normalised_image
 
 # function to remove shadows from the image
 def de_shadow(image):
+    # splitting the image into channels
     bA = image[:,:,0]
     gA = image[:,:,1]
     rA = image[:,:,2]
 
+    # dialting the image channels individually to spead the text to the background
     dilated_image_bB = cv2.dilate(bA, np.ones((7,7), np.uint8))
     dilated_image_gB = cv2.dilate(gA, np.ones((7,7), np.uint8))
     dilated_image_rB = cv2.dilate(rA, np.ones((7,7), np.uint8))
 
+    # blurring the image to get the backround image
     bB = cv2.medianBlur(dilated_image_bB, 21)
     gB = cv2.medianBlur(dilated_image_gB, 21)
     rB = cv2.medianBlur(dilated_image_rB, 21)
 
-    image = np.dstack((image, np.ones((image.shape[0],\
-         image.shape[1], 1))*255))
+    # blend_modes library works with 4 channels, the last channel being the alpha channel
+    # so we add one alpha channel to our image and the background image each
+    image = np.dstack((image, np.ones((image.shape[0], image.shape[1], 1))*255))
     image = image.astype(float)
     dilate = [bB,gB,rB]
     dilate = cv2.merge(dilate)
-    dilate = np.dstack((dilate, np.ones((image.shape[0],\
-         image.shape[1], 1))*255))
+    dilate = np.dstack((dilate, np.ones((image.shape[0], image.shape[1], 1))*255))
     dilate = dilate.astype(float)
 
+    # now we divide the image with the background image 
+    # without rescaling i.e scaling factor = 1.0
     blend = divide(image,dilate,1.0)
     blendb = blend[:,:,0]
     blendg = blend[:,:,1]
@@ -109,6 +120,7 @@ def de_shadow(image):
     blend = blend*0.85
     blend = np.uint8(blend)
 
+    # returning the shadow-free image
     return blend
 
 # function to get the median of all the angles of the text words in the image
@@ -168,13 +180,13 @@ def rotate(image: np.ndarray,angle, background_color):
 def get_otsu(image):
     # binarizing the image using otsu's binarization method
     _, otsu = cv2.threshold(image,180,255,cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-
+    
     # finding the contours in the binarized image
     contours_bin,_ = cv2.findContours(otsu,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
 
     # inverting the binarized image
     otsu_inv = ~otsu
-
+    
     # finding the contours in the inverted binarized image
     contours_bin_inv,_ = cv2.findContours(otsu_inv,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
 
@@ -183,40 +195,71 @@ def get_otsu(image):
     if len(contours_bin) < len(contours_bin_inv):
         print("black background image")
         return otsu_inv
+        cv2.imwrite("otsu inv.jpg",otsu_inv)
     else:
         print("white background image")
+        cv2.imwrite("otsu.jpg",otsu)
         return otsu
 
 # function to correct the 2d skew of the image
 def correct_skew(image):
+    # remove the shadows in the image
     no_shadows = de_shadow(image)
+    cv2.imwrite("de_shadow.jpg",no_shadows)
+    no_shadows1 = remove_shadows(image)
+    cv2.imwrite("remove_shadows.jpg",no_shadows1)
+    # resizing the image to 2000x3000 to sync it with
+    #  the morphological tranformations in get_median_angle() function
     image_resized = image_resize(no_shadows,2000,3000)
+
+    # getting the binarized image
     gray = cv2.cvtColor(image_resized,cv2.COLOR_BGR2GRAY)
     otsu = get_otsu(gray)
+    #cv2.imwrite("ostu.jpg",otsu)
+    # find median of the angles
     median_angle = get_median_angle(otsu)
-    rotated_image = rotate(image_resized,corrected_angle(median_angle),(255,255,255))
-    
-    while True:
-        rotated_image_gray = cv2.cvtColor(rotated_image,cv2.COLOR_BGR2GRAY)
-        otsu = get_otsu(rotated_image_gray)
-        osd_rotated_image = pytesseract.image_to_osd(otsu)
-        angle_rotated_image = re.search('(?<=Rotate: )\d+', osd_rotated_image).group(0)
 
-        if (angle_rotated_image == '0'):
-            # no further rotation
-            rotated_image = rotated_image
+    # rotating the image
+    rotated_median_complex = rotate(image_resized,corrected_angle(median_angle),(255,255,255))
+    cv2.imwrite("rot med.jpg",rotated_median_complex)
+    # after rotating the image using above function, the image is rotated
+    # such that the text is alligned along any one of the 4 axes i.e 0, 90, 180 or 270
+    # so we are going to use tesseract's image_to_osd function to set it right
+
+    while True:
+
+        # tesseract's image_to_osd() function works best with images with more visible characters.
+        # so we are binarizing the image before passing it to the function
+        # otherwise, due to less clarity in the image tesseract raises an expection: 0 dpi exception
+
+        rotated_median_complex_gray = cv2.cvtColor(rotated_median_complex,cv2.COLOR_BGR2GRAY)
+        otsu = get_otsu(rotated_median_complex_gray)
+        
+        osd_rotated_median_complex = pytesseract.image_to_osd(otsu)
+
+        # using regex we search for the angle(in string format) of the text
+        angle_rotated_median_complex = re.search('(?<=Rotate: )\d+', osd_rotated_median_complex).group(0)
+
+        if (angle_rotated_median_complex == '0'):
+            print("angle of rotated median complex = 0")
+            print("no further rotation")
+            rotated_median_complex = rotated_median_complex
+            # break the loop once we get the correctly deskewed image
             break
-        elif (angle_rotated_image == '90'):
-            rotated_image = rotate(rotated_image,90,(255,255,255))
+        elif (angle_rotated_median_complex == '90'):
+            print(" image to osd next rotation angle = 90")
+            rotated_median_complex = rotate(rotated_median_complex,90,(255,255,255))
             continue
-        elif (angle_rotated_image == '180'):
-            rotated_image = rotate(rotated_image,180,(255,255,255))
+        elif (angle_rotated_median_complex == '180'):
+            print("image to osd next rotation angle = 180")
+            rotated_median_complex = rotate(rotated_median_complex,180,(255,255,255))
             continue
-        elif (angle_rotated_image == '270'):
-            rotated_image = rotate(rotated_image,90,(255,255,255))
+        elif (angle_rotated_median_complex == '270'):
+            print("image to osd next rotation angle = 270")
+            rotated_median_complex = rotate(rotated_median_complex,90,(255,255,255))
             continue    
     
-    return rotated_image
+    return rotated_median_complex
 
 # function to join the text elements in a list
 def list_to_string(list):
@@ -225,8 +268,8 @@ def list_to_string(list):
 
 
 path_shadows = r'F:\tarun\images\shadows\shadows13.jpg'
-path_skew = r'F:\tarun\images\skew\deskew-16.jpg'
-path_test = r'F:\tarun\images\test\1.jpg'
+path_skew = r'F:\tarun\images\skew\deskew-25.jpg'
+path_images = r'F:\tarun\images\test\1.jpg'
 
 # reading the image
 image = cv2.imread(path_shadows)
@@ -265,7 +308,7 @@ texts = []
 for i in range(boxes):
     if (int(ocr['conf'][i])>64):
         (x,y,w,h) = (ocr['left'][i],ocr['top'][i],ocr['width'][i],ocr['height'][i])
-        cv2.rectangle(image_resized_copy,(x,y),(x+w,y+h),(0,0,255),1)
+        cv2.rectangle(image_resized_copy,(x,y),(x+w,y+h),(255,0,0),2)
         #texts[i] = spell.correction(ocr['texts'][i])
         texts.append(ocr['text'][i])
         # cv2.imshow("text",image_resized_copy)
@@ -276,8 +319,8 @@ string = list_to_string(texts)
 print("String: ",string)
 
 # text to speech
-engine.say(string)
-engine.runAndWait()
+# engine.say(string)
+# engine.runAndWait()
 
 cv2.imwrite("otsu.jpg",otsu)
 cv2.imwrite("text.jpg",image_resized_copy)
