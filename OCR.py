@@ -15,7 +15,7 @@ from spellchecker import SpellChecker
 # If you don't have tesseract executable in your PATH, include the following line:
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract'
 
-# function to resize the image without distortion i.e resizing with ratios
+# function to resize the image without distortion i.e resizing with ratios.
 def image_resize(image: np.ndarray, width = None, height = None, inter = cv2.INTER_CUBIC):
     # initialize the dimensions of the image to be resized and
     # grab the image size
